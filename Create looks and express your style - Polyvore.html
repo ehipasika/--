@@ -55,8 +55,58 @@
             </tr>
         </tbody></table>
         ><div class="offscreen"></div>
+        <style>
+        .p{
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            background: black;
+        }
+        </style>
     <script src="jquery-1.11.3.min.js"></script>
     <script>
+    var debug = function(){};
+    var Rotate = function( $el  ){
+        var startEvent ;
+
+        var boxRotate = 0 ;// $el.attr("style").match(/\d+/)[0]*1 || 0;
+        
+        var $p = $("<div></div>").addClass("p").css({left:"50%",top:"50%"}).appendTo($el);
+
+        var dist = function(p1,p2){
+            return Math.pow(Math.pow(p1.x - p2.x,2) + Math.pow( p1.y - p2.y , 2 ),0.5);
+        };
+
+        var getDeg = window.j = function( e ){
+            var o = { x : $p.offset().left , y : $p.offset().top }
+            var s = { x : startEvent.clientX , y : startEvent.clientY};
+            var m = { x : ( s.x + e.x ) * 0.5 , y : ( s.y + e.y ) * 0.5 };
+
+            var deg = Math.atan( dist( m , e ) / dist( m , o ) ) * 180 / Math.PI;
+            
+            debug( s );
+            debug( e );
+            debug( o );
+            debug( m );
+
+            deg = deg * 2;
+            deg = deg * ( e.x > s.x ? 1 : -1 );
+            deg = deg * ( s.y > o.y ? -1 : 1 )
+
+            return deg;
+        };
+
+        this.setStartEvent = function(ev){
+            startEvent = ev;
+        }
+
+        this.deg = function( e , update ){
+            var deg =getDeg({x:e.clientX,y:e.clientY});
+            $el.css("transform","rotate("+(boxRotate + deg)+"deg)");
+            update && (boxRotate += deg);
+        };
+    };
+
     $(function(){
 
        $('html,body').click(function(event) {
@@ -94,7 +144,25 @@
 
         };
 
-        $('#canvas').on('mousedown', '.selectNode,.handles_border', function(ev) {
+        
+        $('#canvas').on("mousedown",".rotatetip",function(e){
+            var $selected = $("#canvas .selected");
+            var r = $selected.data("r");
+            if( !r ){
+                r = new Rotate($selected.add($(".handles_border")));
+                $selected.data("r",r);
+            }
+            r.setStartEvent(e);
+
+            $(document).on("mouseup",function(e){
+                r.deg( e , true );
+                $(document).off("mouseup mousemove");
+            }).on("mousemove",function(e){
+                r.deg(e);
+            });
+
+            return false;
+        }).on('mousedown', '.selectNode,.handles_border', function(ev) {
             var $this = $(this);
 
             $this = $this.hasClass('handles_border') ? $("#canvas .selected") : $this;
@@ -188,9 +256,7 @@
 
        });
 
-       // 拉伸缩放
-
-    //左下按钮
+     //拉伸按钮
        $('.handles_border').on('mousedown', '.sw,.nw,.ne,.se', function(ev) {
             var  $selected = $('#canvas .selected');
             var $this = $(this);
@@ -243,6 +309,14 @@
            return false;
 
        });
+
+    //旋转
+    $('.handles_border').on('click', '.rotatetip', function(ev) {
+       // var 
+        event.preventDefault();
+        /* Act on the event */
+    });
+    
     });
 
 
